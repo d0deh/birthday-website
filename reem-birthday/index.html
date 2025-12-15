@@ -14,11 +14,25 @@
     @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     @keyframes slideDown { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
     @keyframes fall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    @keyframes confettiFall { 0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
     .animate-float { animation: float 4s ease-in-out infinite; }
     .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
     .animate-scaleIn { animation: scaleIn 0.4s ease-out; }
     .animate-slideDown { animation: slideDown 0.4s ease-out; }
     .animate-fall { animation: fall 4s linear forwards; }
+    .animate-spin { animation: spin 1s linear infinite; }
+    .animate-confetti { animation: confettiFall 3s ease-out forwards; }
+    
+    /* Custom Cursor */
+    .game-cursor {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E⭐%3C/text%3E%3C/svg%3E") 16 16, auto;
+    }
+    
+    .ticket-cursor {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E🎟️%3C/text%3E%3C/svg%3E") 16 16, auto;
+    }
   </style>
 </head>
 <body>
@@ -26,9 +40,71 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
+    // Sound Effects Manager - Gentle sounds
+    const SoundManager = {
+      audioContext: null,
+      
+      init() {
+        if (!this.audioContext) {
+          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      },
+      
+      playTone(frequency, duration, type = 'sine', volume = 0.08) {
+        if (!this.audioContext) this.init();
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        oscillator.frequency.value = frequency;
+        oscillator.type = type;
+        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+      },
+      
+      playHeartCollect() {
+        this.playTone(1200, 0.15, 'sine', 0.06);
+      },
+      
+      playSparkleCollect() {
+        this.playTone(1400, 0.12, 'sine', 0.05);
+      },
+      
+      playZoneEnter() {
+        this.playTone(800, 0.2, 'sine', 0.05);
+      },
+      
+      playDrumroll() {
+        for (let i = 0; i < 15; i++) {
+          setTimeout(() => {
+            this.playTone(100 + Math.random() * 50, 0.06, 'triangle', 0.04);
+          }, i * 100);
+        }
+      },
+      
+      playSuccess() {
+        this.playTone(523, 0.15, 'sine', 0.06);
+        setTimeout(() => this.playTone(659, 0.15, 'sine', 0.06), 120);
+        setTimeout(() => this.playTone(784, 0.2, 'sine', 0.06), 240);
+      },
+      
+      playCelebration() {
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            this.playTone(600 + Math.random() * 400, 0.1, 'sine', 0.03);
+          }, i * 150);
+        }
+      }
+    };
+
     const BirthdayGame = () => {
+      const [isLoading, setIsLoading] = useState(true);
+      const [showMobileWarning, setShowMobileWarning] = useState(false);
       const [isUnlocked, setIsUnlocked] = useState(false);
       const [passphrase, setPassphrase] = useState('');
+      const [showPasswordConfetti, setShowPasswordConfetti] = useState(false);
       const [showWelcome, setShowWelcome] = useState(false);
       const [activeModal, setActiveModal] = useState(null);
       const [visitedAreas, setVisitedAreas] = useState({ dodi: false, photos: false, lulu: false, gift: false });
@@ -42,8 +118,11 @@
       const [isPlayerIdle, setIsPlayerIdle] = useState(true);
       const [luluHearts, setLuluHearts] = useState(0);
       const [showDrumroll, setShowDrumroll] = useState(false);
+      const [isMusicPlaying, setIsMusicPlaying] = useState(false);
       const gameRef = useRef(null);
       const phaserGameRef = useRef(null);
+      const audioRef = useRef(null);
+      const lastZoneRef = useRef(null);
 
       const BIRTHDAY_NAME = "Reem";
       const totalHearts = 12;
@@ -62,7 +141,6 @@
         "💖 The show must go on... with you!"
       ];
 
-      // Memory photos
       const memoryPhotos = [
         "images/img1.png",
         "images/img2.png",
@@ -79,6 +157,49 @@
         "images/img13.jpg",
         "images/img14.jpg",
       ];
+
+      useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 2500);
+        return () => clearTimeout(timer);
+      }, []);
+
+      useEffect(() => {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+          setShowMobileWarning(true);
+        }
+      }, []);
+
+      useEffect(() => {
+        const initSound = () => {
+          SoundManager.init();
+          document.removeEventListener('click', initSound);
+        };
+        document.addEventListener('click', initSound);
+        return () => document.removeEventListener('click', initSound);
+      }, []);
+
+      const toggleMusic = () => {
+        if (audioRef.current) {
+          if (isMusicPlaying) {
+            audioRef.current.pause();
+          } else {
+            audioRef.current.play();
+          }
+          setIsMusicPlaying(!isMusicPlaying);
+        }
+      };
+
+      const handleUnlock = () => {
+        if (passphrase.toLowerCase() === 'lulu23') {
+          SoundManager.playSuccess();
+          setShowPasswordConfetti(true);
+          setTimeout(() => {
+            setShowPasswordConfetti(false);
+            setIsUnlocked(true);
+          }, 2000);
+        }
+      };
 
       useEffect(() => {
         let idleTimer;
@@ -744,12 +865,18 @@
           });
 
           const handlers = {
-            nearZone: e => setNearbyZone(e.detail),
+            nearZone: e => {
+              if (e.detail && e.detail !== lastZoneRef.current) {
+                SoundManager.playZoneEnter();
+              }
+              lastZoneRef.current = e.detail;
+              setNearbyZone(e.detail);
+            },
             interact: e => setActiveModal(e.detail),
             showWelcome: () => { setShowWelcome(true); setTimeout(() => setShowWelcome(false), 5000); },
             updateVisited: e => setVisitedAreas(p => ({ ...p, [e.detail.id]: true })),
-            collectHeart: () => setHeartsCollected(p => p + 1),
-            findMemory: e => { setMemoriesFound(p => p + 1); setCurrentMemory(e.detail); setTimeout(() => setCurrentMemory(null), 3000); },
+            collectHeart: () => { SoundManager.playHeartCollect(); setHeartsCollected(p => p + 1); },
+            findMemory: e => { SoundManager.playSparkleCollect(); setMemoriesFound(p => p + 1); setCurrentMemory(e.detail); setTimeout(() => setCurrentMemory(null), 3000); },
             playerMove: e => setPlayerPos(e.detail),
             luluHeart: () => setLuluHearts(p => p + 1)
           };
@@ -763,6 +890,48 @@
 
       const completedCount = Object.values(visitedAreas).filter(Boolean).length;
 
+      if (isLoading) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-8xl mb-6 animate-bounce">🎪</div>
+              <h1 className="text-3xl font-bold text-green-700 mb-4">Setting up the Big Top...</h1>
+              <div className="flex justify-center gap-2">
+                {['🎈', '🎠', '🦜', '✨', '🎪'].map((e, i) => (
+                  <span key={i} className="text-3xl animate-bounce" style={{ animationDelay: `${i * 0.15}s` }}>{e}</span>
+                ))}
+              </div>
+              <div className="mt-6 w-64 h-2 bg-green-200 rounded-full overflow-hidden mx-auto">
+                <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (showMobileWarning) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 flex items-center justify-center p-4">
+            <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 max-w-md w-full border-4 border-amber-400 text-center">
+              <div className="text-6xl mb-4">📱➡️💻</div>
+              <h2 className="text-2xl font-bold text-amber-700 mb-4">Best on Desktop!</h2>
+              <p className="text-amber-600 mb-6">
+                This circus experience uses keyboard controls and works best on a computer. For the full magic, please visit on a desktop or laptop!
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => setShowMobileWarning(false)}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-full font-bold hover:from-green-400 hover:to-emerald-400 transition-all"
+                >
+                  🎪 Continue Anyway
+                </button>
+                <p className="text-sm text-gray-500">Controls: WASD to move, E to interact</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       if (!isUnlocked) {
         return (
           <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -775,7 +944,23 @@
               </div>
             ))}
             
-            <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 max-w-md w-full border-4 border-green-400 relative overflow-hidden">
+            {showPasswordConfetti && (
+              <div className="fixed inset-0 pointer-events-none z-50">
+                {[...Array(50)].map((_, i) => (
+                  <div key={i} className="absolute animate-confetti" style={{
+                    left: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 0.5}s`,
+                    animationDuration: `${2 + Math.random() * 2}s`
+                  }}>
+                    <span style={{ fontSize: `${20 + Math.random() * 20}px` }}>
+                      {['🎉', '💚', '🎪', '✨', '🎈', '⭐', '🦜'][Math.floor(Math.random() * 7)]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 max-w-md w-full border-4 border-green-400 relative overflow-hidden ticket-cursor">
               <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-green-200 to-transparent rounded-br-full" />
               <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-pink-200 to-transparent rounded-tl-full" />
               
@@ -790,12 +975,12 @@
                 type="text"
                 value={passphrase}
                 onChange={e => setPassphrase(e.target.value)}
-                onKeyPress={e => { if (e.key === 'Enter' && passphrase.toLowerCase() === 'lulu23') setIsUnlocked(true); }}
+                onKeyPress={e => { if (e.key === 'Enter') handleUnlock(); }}
                 placeholder="Speak the magic words..."
                 className="w-full px-6 py-4 bg-green-50 border-2 border-green-300 rounded-full mb-4 focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-200 text-green-800 text-center text-lg transition-all"
               />
               <button
-                onClick={() => { if (passphrase.toLowerCase() === 'lulu23') setIsUnlocked(true); }}
+                onClick={handleUnlock}
                 className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white py-4 rounded-full font-bold text-xl hover:from-green-400 hover:via-emerald-400 hover:to-green-400 transition-all hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
               >
                 🎟️ Enter the Big Top 🎟️
@@ -835,8 +1020,22 @@
         )
       );
 
+      const MusicButton = () => (
+        <button
+          onClick={toggleMusic}
+          className="fixed bottom-4 right-4 z-50 bg-white/95 backdrop-blur-sm p-4 rounded-full shadow-xl border-2 border-green-300 hover:scale-110 transition-all"
+          title={isMusicPlaying ? "Pause Music" : "Play Music"}
+        >
+          <span className="text-2xl">{isMusicPlaying ? '🔊' : '🔇'}</span>
+        </button>
+      );
+
       return (
-        <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 p-4">
+        <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 p-4 game-cursor">
+          <audio ref={audioRef} loop>
+            <source src="music/background.mp3" type="audio/mpeg" />
+          </audio>
+
           {showWelcome && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
               <div className="bg-white rounded-3xl p-8 max-w-lg text-center shadow-2xl border-4 border-green-400 mx-4 animate-scaleIn">
@@ -850,6 +1049,7 @@
                   <p className="text-green-700 flex items-center gap-3"><span className="text-xl">✨</span><span><strong>Interact:</strong> Press E at glowing circles</span></p>
                   <p className="text-green-700 flex items-center gap-3"><span className="text-xl">💚</span><span><strong>Collect:</strong> Green hearts for love!</span></p>
                   <p className="text-green-700 flex items-center gap-3"><span className="text-xl">⭐</span><span><strong>Discover:</strong> Golden stars for memories!</span></p>
+                  <p className="text-green-700 flex items-center gap-3"><span className="text-xl">🔊</span><span><strong>Music:</strong> Click the speaker button!</span></p>
                 </div>
                 <p className="text-pink-600 mt-5 font-semibold text-lg">🎺 The show is about to begin! 🎺</p>
               </div>
@@ -949,6 +1149,8 @@
 
             <div className="text-center mt-4 text-green-600 text-sm font-medium">🎪 A spectacular show for {BIRTHDAY_NAME}'s 23rd Birthday 🎪</div>
           </div>
+
+          <MusicButton />
 
           {activeModal && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40 p-4" onClick={e => e.target === e.currentTarget && setActiveModal(null)}>
@@ -1053,7 +1255,9 @@
                   <div className="text-center space-y-4">
                     <p className="text-xl text-pink-600 font-bold mb-4">🎙️ And now... from the tropical skies above...</p>
                     <div className="relative inline-block">
-                      <div className="text-8xl animate-bounce">🦜</div>
+                      <div className="w-48 h-48 mx-auto rounded-full border-4 border-green-400 overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                        <span className="text-8xl animate-bounce">🦜</span>
+                      </div>
                       <div className="absolute -top-2 -right-2 text-2xl animate-ping">✨</div>
                       <div className="absolute -bottom-2 -left-2 text-2xl animate-ping" style={{ animationDelay: '0.15s' }}>💚</div>
                       <div className="absolute top-0 left-0 text-xl animate-ping" style={{ animationDelay: '0.3s' }}>⭐</div>
@@ -1118,9 +1322,11 @@
                         <button
                           onClick={() => {
                             if (giftStage === 0) {
+                              SoundManager.playDrumroll();
                               setShowDrumroll(true);
                               setTimeout(() => { setShowDrumroll(false); setGiftStage(1); }, 2000);
                             } else if (giftStage === 4) {
+                              SoundManager.playCelebration();
                               setShowCelebration(true);
                               setTimeout(() => setShowCelebration(false), 8000);
                               setGiftStage(5);
