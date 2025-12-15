@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎪 Happy Birthday Reem! 🎪</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slideDown { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    @keyframes fall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+    .animate-float { animation: float 4s ease-in-out infinite; }
+    .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
+    .animate-scaleIn { animation: scaleIn 0.4s ease-out; }
+    .animate-slideDown { animation: slideDown 0.4s ease-out; }
+    .animate-fall { animation: fall 4s linear forwards; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const BirthdayGame = () => {
+      const [isUnlocked, setIsUnlocked] = useState(false);
+      const [passphrase, setPassphrase] = useState('');
+      const [showWelcome, setShowWelcome] = useState(false);
+      const [activeModal, setActiveModal] = useState(null);
+      const [visitedAreas, setVisitedAreas] = useState({ dodi: false, photos: false, lulu: false, gift: false });
+      const [giftStage, setGiftStage] = useState(0);
+      const [showCelebration, setShowCelebration] = useState(false);
+      const [nearbyZone, setNearbyZone] = useState(null);
+      const [heartsCollected, setHeartsCollected] = useState(0);
+      const [memoriesFound, setMemoriesFound] = useState(0);
+      const [currentMemory, setCurrentMemory] = useState(null);
+      const [playerPos, setPlayerPos] = useState({ x: 600, y: 450 });
+      const [isPlayerIdle, setIsPlayerIdle] = useState(true);
+      const [luluHearts, setLuluHearts] = useState(0);
+      const [showDrumroll, setShowDrumroll] = useState(false);
+      const gameRef = useRef(null);
+      const phaserGameRef = useRef(null);
+
+      const BIRTHDAY_NAME = "Reem";
+      const totalHearts = 12;
+      const totalMemories = 10;
+      
+      const memories = [
+        "🎪 Welcome to the greatest show on earth!",
+        "✨ A star was born, and her name is Reem!",
+        "💚 Every moment with you is pure magic!",
+        "🌟 You light up the big top!",
+        "🎭 Life's greatest performance stars YOU!",
+        "🦋 Watch her soar, ladies and gentlemen!",
+        "💫 23 years of wonder and spectacle!",
+        "🎠 The crowd goes wild for Reem!",
+        "🌈 A talent beyond compare!",
+        "💖 The show must go on... with you!"
+      ];
+
+      // Memory photos
+      const memoryPhotos = [
+        "images/img1.png",
+        "images/img2.png",
+        "images/img3.png",
+        "images/img4.png",
+        "images/img5.png",
+        "images/img6.png",
+        "images/img7.png",
+        "images/img8.jpg",
+        "images/img9.jpg",
+        "images/img10.png",
+        "images/img11.jpg",
+        "images/img12.jpg",
+        "images/img13.jpg",
+        "images/img14.jpg",
+      ];
+
+      useEffect(() => {
+        let idleTimer;
+        const resetIdle = () => {
+          setIsPlayerIdle(false);
+          clearTimeout(idleTimer);
+          idleTimer = setTimeout(() => setIsPlayerIdle(true), 1500);
+        };
+        
+        window.addEventListener('playerMove', resetIdle);
+        return () => {
+          window.removeEventListener('playerMove', resetIdle);
+          clearTimeout(idleTimer);
+        };
+      }, []);
+
+      useEffect(() => {
+        if (!isUnlocked || !gameRef.current) return;
+
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js';
+        script.async = true;
+        
+        script.onload = () => {
+          if (phaserGameRef.current) return;
+
+          class GameScene extends Phaser.Scene {
+            constructor() {
+              super({ key: 'GameScene' });
+              this.player = null;
+              this.velocity = { x: 0, y: 0 };
+              this.zones = [];
+              this.hearts = [];
+              this.sparkles = [];
+              this.facing = 'down';
+              this.lulu = null;
+            }
+
+            preload() {
+              this.createTextures();
+            }
+
+            createTextures() {
+              let g;
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xf5e6d3);
+              g.fillRect(0, 0, 32, 32);
+              g.fillStyle(0xfff8e7, 0.6);
+              for (let i = 0; i < 6; i++) {
+                g.fillCircle(Math.random() * 32, Math.random() * 32, 2 + Math.random() * 2);
+              }
+              g.fillStyle(0xe8d4c0, 0.3);
+              for (let i = 0; i < 4; i++) {
+                g.fillCircle(Math.random() * 32, Math.random() * 32, 3);
+              }
+              g.fillStyle(0xf48fb1, 0.4);
+              g.fillRect(5, 10, 2, 2);
+              g.fillStyle(0xffd700, 0.4);
+              g.fillRect(20, 25, 2, 2);
+              g.generateTexture('ground', 32, 32);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xfce4ec);
+              g.fillRect(0, 0, 32, 32);
+              g.fillStyle(0xf8bbd9, 0.5);
+              g.fillRect(0, 0, 6, 32);
+              g.fillRect(12, 0, 6, 32);
+              g.fillRect(24, 0, 6, 32);
+              g.fillStyle(0xffffff, 0.3);
+              g.fillCircle(8, 16, 2);
+              g.generateTexture('path', 32, 32);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xc9302c);
+              g.fillRect(0, 0, 32, 32);
+              g.fillStyle(0xffd700, 0.4);
+              g.fillCircle(16, 16, 14);
+              g.fillStyle(0xc9302c);
+              g.fillCircle(16, 16, 11);
+              g.fillStyle(0xffffff, 0.15);
+              g.fillCircle(16, 16, 8);
+              g.generateTexture('ring', 32, 32);
+              g.destroy();
+
+              ['down', 'up', 'left', 'right'].forEach(dir => {
+                g = this.make.graphics({ x: 0, y: 0, add: false });
+                g.fillStyle(0x000000, 0.15);
+                g.fillEllipse(16, 40, 12, 4);
+                g.fillStyle(0xffffff);
+                g.fillRect(10, 30, 4, 9);
+                g.fillRect(18, 30, 4, 9);
+                g.fillStyle(0xf48fb1);
+                g.fillRect(10, 31, 4, 2);
+                g.fillRect(10, 35, 4, 2);
+                g.fillRect(18, 32, 4, 2);
+                g.fillRect(18, 36, 4, 2);
+                g.fillStyle(0xe91e63);
+                g.fillCircle(12, 39, 3);
+                g.fillCircle(20, 39, 3);
+                g.fillStyle(0xffd700);
+                g.fillCircle(12, 38, 1.5);
+                g.fillCircle(20, 38, 1.5);
+                g.fillStyle(0xf8bbd9);
+                g.fillEllipse(16, 31, 14, 6);
+                g.fillStyle(0xf48fb1);
+                g.fillEllipse(16, 28, 12, 5);
+                g.fillStyle(0xfce4ec);
+                g.fillEllipse(16, 25, 10, 4);
+                g.fillStyle(0xf48fb1);
+                g.fillRect(11, 18, 10, 8);
+                g.fillStyle(0xffffff);
+                g.fillCircle(10, 18, 3);
+                g.fillCircle(16, 17, 3);
+                g.fillCircle(22, 18, 3);
+                g.fillStyle(0xffd700);
+                g.fillCircle(13, 20, 2);
+                g.fillCircle(19, 20, 2);
+                g.fillCircle(16, 21, 2.5);
+                g.fillStyle(0xffe4c4);
+                if (dir === 'left') {
+                  g.fillRect(4, 19, 6, 3);
+                  g.fillRect(21, 19, 4, 3);
+                } else if (dir === 'right') {
+                  g.fillRect(7, 19, 4, 3);
+                  g.fillRect(22, 19, 6, 3);
+                } else {
+                  g.fillRect(5, 19, 5, 3);
+                  g.fillRect(22, 19, 5, 3);
+                }
+                g.fillStyle(0xfce4ec);
+                g.fillCircle(9, 18, 4);
+                g.fillCircle(23, 18, 4);
+                g.fillStyle(0x5d4037);
+                if (dir === 'up') {
+                  g.fillRect(6, 4, 20, 12);
+                } else {
+                  g.fillRect(4, 6, 6, 12);
+                  g.fillRect(22, 6, 6, 12);
+                }
+                g.fillStyle(0x5d4037);
+                g.fillCircle(7, 8, 5);
+                g.fillCircle(25, 8, 5);
+                g.fillStyle(0x4caf50);
+                g.fillCircle(4, 6, 3);
+                g.fillCircle(10, 6, 3);
+                g.fillCircle(7, 4, 2);
+                g.fillCircle(22, 6, 3);
+                g.fillCircle(28, 6, 3);
+                g.fillCircle(25, 4, 2);
+                g.fillStyle(0x81c784);
+                g.fillCircle(7, 6, 1.5);
+                g.fillCircle(25, 6, 1.5);
+                g.fillStyle(0xffe4c4);
+                g.fillCircle(16, 12, 7);
+                if (dir !== 'up') {
+                  g.fillStyle(0xffcdd2, 0.7);
+                  g.fillCircle(10, 14, 2.5);
+                  g.fillCircle(22, 14, 2.5);
+                  g.fillStyle(0xff6b9d);
+                  g.fillCircle(16, 13, 2.5);
+                  g.fillStyle(0xffffff, 0.4);
+                  g.fillCircle(15, 12, 1);
+                  g.fillStyle(0xffffff);
+                  if (dir === 'down') {
+                    g.fillCircle(13, 10, 2.5);
+                    g.fillCircle(19, 10, 2.5);
+                    g.fillStyle(0x4a3728);
+                    g.fillCircle(13, 10, 1.5);
+                    g.fillCircle(19, 10, 1.5);
+                    g.fillStyle(0xffffff);
+                    g.fillCircle(14, 9, 0.7);
+                    g.fillCircle(20, 9, 0.7);
+                  } else if (dir === 'left') {
+                    g.fillCircle(12, 10, 2.5);
+                    g.fillStyle(0x4a3728);
+                    g.fillCircle(11, 10, 1.5);
+                  } else {
+                    g.fillCircle(20, 10, 2.5);
+                    g.fillStyle(0x4a3728);
+                    g.fillCircle(21, 10, 1.5);
+                  }
+                  g.lineStyle(1.5, 0xd4838f);
+                  g.beginPath();
+                  g.arc(16, 14, 3, 0.2, Math.PI - 0.2);
+                  g.strokePath();
+                }
+                g.fillStyle(0xf48fb1);
+                g.fillRect(12, 1, 8, 4);
+                g.fillStyle(0xfce4ec);
+                g.fillRect(10, 4, 12, 2);
+                g.fillStyle(0x4caf50);
+                g.fillRect(12, 3, 8, 1.5);
+                g.generateTexture('player_' + dir + '_0', 32, 44);
+                g.destroy();
+              });
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0x000000, 0.1);
+              g.fillTriangle(34, 4, 2, 66, 66, 66);
+              g.fillStyle(0xf48fb1);
+              g.fillTriangle(32, 2, 0, 64, 64, 64);
+              g.fillStyle(0xfce4ec);
+              g.fillTriangle(32, 10, 8, 58, 24, 58);
+              g.fillTriangle(32, 10, 40, 58, 56, 58);
+              g.fillStyle(0xf48fb1);
+              g.fillTriangle(32, 18, 16, 52, 32, 52);
+              g.fillTriangle(32, 18, 32, 52, 48, 52);
+              g.fillStyle(0xffd700);
+              for (let i = 0; i < 8; i++) {
+                g.fillCircle(4 + i * 8, 62, 4);
+              }
+              g.fillCircle(32, 4, 5);
+              g.fillStyle(0xff6b9d);
+              g.fillTriangle(37, 2, 37, 10, 48, 6);
+              g.fillStyle(0x4a148c, 0.8);
+              g.fillRect(24, 48, 16, 16);
+              g.generateTexture('tent', 68, 68);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xf8bbd9);
+              g.fillTriangle(22, 0, 0, 40, 44, 40);
+              g.fillStyle(0xffffff);
+              g.fillTriangle(22, 8, 8, 36, 22, 36);
+              g.fillTriangle(22, 8, 22, 36, 36, 36);
+              g.fillStyle(0xffd700);
+              for (let i = 0; i < 5; i++) {
+                g.fillCircle(6 + i * 8, 38, 3);
+              }
+              g.fillCircle(22, 3, 4);
+              g.generateTexture('smallTent', 44, 44);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xf8bbd9);
+              g.fillCircle(24, 40, 20);
+              g.fillStyle(0xfce4ec);
+              g.fillCircle(24, 40, 16);
+              g.fillStyle(0xf48fb1);
+              g.fillCircle(24, 14, 18);
+              g.fillStyle(0xffd700);
+              g.fillRect(22, 8, 4, 32);
+              g.fillCircle(24, 6, 4);
+              g.generateTexture('carousel', 48, 52);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xd4a574);
+              g.fillTriangle(18, 60, 32, 32, 46, 60);
+              g.lineStyle(3, 0xf48fb1);
+              g.strokeCircle(32, 32, 26);
+              g.lineStyle(2, 0xffd700);
+              g.strokeCircle(32, 32, 28);
+              g.lineStyle(2, 0xf8bbd9);
+              for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                g.lineBetween(32, 32, 32 + Math.cos(angle) * 24, 32 + Math.sin(angle) * 24);
+              }
+              for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                g.fillStyle(0xfce4ec);
+                g.fillCircle(32 + Math.cos(angle) * 24, 32 + Math.sin(angle) * 24, 5);
+              }
+              g.fillStyle(0xffd700);
+              g.fillCircle(32, 32, 5);
+              g.generateTexture('ferris', 64, 64);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.lineStyle(1, 0x888888, 0.6);
+              g.lineBetween(16, 40, 10, 16);
+              g.lineBetween(16, 40, 16, 12);
+              g.lineBetween(16, 40, 22, 14);
+              const balloonColors = [0xf48fb1, 0xffd700, 0x4caf50, 0xce93d8, 0x81d4fa];
+              const balloonPos = [{x:10,y:10,r:8}, {x:16,y:6,r:7}, {x:22,y:9,r:7}, {x:12,y:16,r:6}, {x:20,y:14,r:6}];
+              balloonPos.forEach((b, i) => {
+                g.fillStyle(balloonColors[i]);
+                g.fillCircle(b.x, b.y, b.r);
+                g.fillStyle(0xffffff, 0.4);
+                g.fillCircle(b.x - 2, b.y - 2, b.r * 0.3);
+              });
+              g.generateTexture('balloons', 32, 44);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xffd700, 0.3);
+              g.fillCircle(14, 14, 14);
+              g.fillStyle(0xffd700);
+              g.fillCircle(14, 14, 10);
+              g.fillStyle(0xfff8e1);
+              g.fillCircle(14, 14, 5);
+              g.generateTexture('starDeco', 28, 28);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.lineStyle(2, 0xd4a574);
+              g.lineBetween(0, 3, 50, 3);
+              const flagColors = [0xf48fb1, 0xffd700, 0x4caf50, 0xce93d8, 0x81d4fa];
+              flagColors.forEach((c, i) => {
+                g.fillStyle(c);
+                g.fillTriangle(3 + i * 10, 4, 8 + i * 10, 18, 13 + i * 10, 4);
+              });
+              g.generateTexture('bunting', 54, 20);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0x4caf50);
+              g.fillEllipse(16, 20, 14, 16);
+              g.fillStyle(0x81c784);
+              g.fillEllipse(16, 22, 10, 12);
+              g.fillStyle(0x388e3c);
+              g.fillEllipse(10, 18, 6, 10);
+              g.fillStyle(0x4caf50);
+              g.fillCircle(16, 8, 8);
+              g.fillStyle(0xffd700);
+              g.fillTriangle(16, -2, 12, 6, 20, 6);
+              g.fillStyle(0xff9800);
+              g.fillTriangle(16, 10, 12, 14, 20, 14);
+              g.fillStyle(0x000000);
+              g.fillCircle(13, 6, 2);
+              g.fillCircle(19, 6, 2);
+              g.fillStyle(0xffffff);
+              g.fillCircle(14, 5, 1);
+              g.fillCircle(20, 5, 1);
+              g.fillStyle(0xffab91, 0.6);
+              g.fillCircle(10, 10, 2);
+              g.fillCircle(22, 10, 2);
+              g.fillStyle(0xff9800);
+              g.fillRect(12, 28, 2, 4);
+              g.fillRect(18, 28, 2, 4);
+              g.generateTexture('lulu', 32, 34);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0x000000, 0.15);
+              g.fillEllipse(16, 42, 14, 4);
+              g.fillStyle(0x5d4037);
+              g.fillRect(9, 36, 5, 6);
+              g.fillRect(18, 36, 5, 6);
+              g.fillStyle(0x212121);
+              g.fillRect(10, 26, 12, 12);
+              g.fillStyle(0xc62828);
+              g.fillRect(8, 14, 16, 14);
+              g.fillStyle(0xffd700);
+              g.fillCircle(12, 18, 1.5);
+              g.fillCircle(12, 22, 1.5);
+              g.fillCircle(12, 26, 1.5);
+              g.fillCircle(20, 18, 1.5);
+              g.fillCircle(20, 22, 1.5);
+              g.fillCircle(20, 26, 1.5);
+              g.fillStyle(0xffe4c4);
+              g.fillCircle(16, 10, 7);
+              g.fillStyle(0x3e2723);
+              g.fillRect(9, 4, 14, 5);
+              g.fillStyle(0x212121);
+              g.fillRect(10, -2, 12, 8);
+              g.fillRect(6, 5, 20, 3);
+              g.fillStyle(0xc62828);
+              g.fillRect(10, 4, 12, 2);
+              g.lineStyle(1.5, 0xd4838f);
+              g.beginPath();
+              g.arc(16, 12, 3, 0.2, Math.PI - 0.2);
+              g.strokePath();
+              g.fillStyle(0x4a3728);
+              g.fillCircle(13, 9, 1.5);
+              g.fillCircle(19, 9, 1.5);
+              g.generateTexture('dodi', 32, 46);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0x4caf50, 0.3);
+              g.fillCircle(9, 9, 11);
+              g.fillCircle(21, 9, 11);
+              g.fillTriangle(0, 12, 30, 12, 15, 30);
+              g.fillStyle(0x4caf50);
+              g.fillCircle(9, 9, 8);
+              g.fillCircle(21, 9, 8);
+              g.fillTriangle(2, 11, 28, 11, 15, 28);
+              g.fillStyle(0x81c784);
+              g.fillCircle(9, 9, 5);
+              g.fillCircle(21, 9, 5);
+              g.fillTriangle(5, 11, 25, 11, 15, 24);
+              g.fillStyle(0xffffff, 0.8);
+              g.fillCircle(8, 7, 2);
+              g.generateTexture('heart', 30, 32);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xffd700, 0.3);
+              g.fillCircle(16, 16, 16);
+              g.fillStyle(0xffd700);
+              g.fillRect(14, 2, 4, 28);
+              g.fillRect(2, 14, 28, 4);
+              g.fillStyle(0xfff8e1);
+              g.fillCircle(16, 16, 6);
+              g.fillStyle(0xffffff);
+              g.fillCircle(16, 16, 3);
+              g.generateTexture('sparkle', 32, 32);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xf48fb1);
+              g.fillRect(0, 0, 6, 4);
+              g.generateTexture('confetti', 6, 4);
+              g.destroy();
+
+              g = this.make.graphics({ x: 0, y: 0, add: false });
+              g.fillStyle(0xffd700);
+              g.fillCircle(4, 4, 4);
+              g.generateTexture('glitter', 8, 8);
+              g.destroy();
+            }
+
+            create() {
+              const W = 1200, H = 900;
+
+              for (let y = 0; y < H; y += 32) {
+                for (let x = 0; x < W; x += 32) {
+                  let tile = 'ground';
+                  if ((x >= 480 && x <= 720) || (y >= 340 && y <= 560)) tile = 'path';
+                  const dist = Math.sqrt((x - 600) ** 2 + (y - 450) ** 2);
+                  if (dist < 90) tile = 'ring';
+                  this.add.image(x + 16, y + 16, tile).setDepth(0);
+                }
+              }
+
+              const decos = [
+                { x: 100, y: 100, t: 'tent' }, { x: 1100, y: 100, t: 'tent' },
+                { x: 100, y: 800, t: 'tent' }, { x: 1100, y: 800, t: 'tent' },
+                { x: 600, y: 80, t: 'smallTent' }, { x: 600, y: 820, t: 'smallTent' },
+                { x: 380, y: 380, t: 'carousel' }, { x: 820, y: 380, t: 'carousel' },
+                { x: 380, y: 520, t: 'carousel' }, { x: 820, y: 520, t: 'carousel' },
+                { x: 240, y: 450, t: 'ferris' },
+              ];
+
+              for (let i = 0; i < 25; i++) {
+                decos.push({ x: 60 + Math.random() * 1080, y: 60 + Math.random() * 780, t: 'balloons' });
+              }
+              for (let i = 0; i < 20; i++) {
+                decos.push({ x: 60 + Math.random() * 1080, y: 60 + Math.random() * 780, t: 'starDeco' });
+              }
+              for (let i = 0; i < 16; i++) {
+                decos.push({ x: 80 + Math.random() * 1040, y: 80 + Math.random() * 740, t: 'bunting' });
+              }
+
+              decos.forEach(d => {
+                const s = this.add.image(d.x, d.y, d.t).setDepth(1);
+                if (d.t === 'balloons') {
+                  this.tweens.add({ targets: s, y: d.y - 12, duration: 1400 + Math.random() * 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                }
+                if (d.t === 'starDeco') {
+                  this.tweens.add({ targets: s, angle: 360, duration: 2500 + Math.random() * 1500, repeat: -1 });
+                  this.tweens.add({ targets: s, scale: 1.25, duration: 500, yoyo: true, repeat: -1 });
+                }
+                if (d.t === 'carousel') {
+                  this.tweens.add({ targets: s, angle: 360, duration: 6000, repeat: -1 });
+                }
+                if (d.t === 'ferris') {
+                  this.tweens.add({ targets: s, angle: 360, duration: 15000, repeat: -1 });
+                }
+                if (d.t === 'bunting') {
+                  this.tweens.add({ targets: s, y: d.y + 4, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                }
+              });
+
+              const heartPositions = [
+                { x: 60, y: 60 }, { x: 1140, y: 60 }, { x: 60, y: 840 }, { x: 1140, y: 840 },
+                { x: 350, y: 120 }, { x: 850, y: 120 }, { x: 350, y: 780 }, { x: 850, y: 780 },
+                { x: 160, y: 450 }, { x: 1040, y: 450 }, { x: 600, y: 160 }, { x: 600, y: 740 }
+              ];
+              heartPositions.forEach((p, i) => {
+                const h = this.add.image(p.x, p.y, 'heart').setDepth(2);
+                h.collected = false;
+                h.idx = i;
+                this.tweens.add({ targets: h, y: p.y - 10, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                this.tweens.add({ targets: h, scale: 1.1, duration: 400, yoyo: true, repeat: -1 });
+                this.hearts.push(h);
+              });
+
+              const sparklePositions = [
+                { x: 280, y: 240 }, { x: 920, y: 240 }, { x: 220, y: 660 }, { x: 980, y: 660 },
+                { x: 480, y: 360 }, { x: 720, y: 540 }, { x: 540, y: 200 }, { x: 660, y: 700 },
+                { x: 360, y: 480 }, { x: 840, y: 420 }
+              ];
+              sparklePositions.forEach((p, i) => {
+                const s = this.add.image(p.x, p.y, 'sparkle').setDepth(2);
+                s.found = false;
+                s.idx = i;
+                this.tweens.add({ targets: s, angle: 360, duration: 2000, repeat: -1 });
+                this.tweens.add({ targets: s, alpha: 0.5, duration: 400, yoyo: true, repeat: -1 });
+                this.sparkles.push(s);
+              });
+
+              this.lulu = this.add.image(200, 250, 'lulu').setDepth(2);
+              this.tweens.add({ targets: this.lulu, y: 245, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+              this.time.addEvent({
+                delay: 2000,
+                callback: () => {
+                  if (this.lulu) {
+                    const sparkle = this.add.circle(this.lulu.x + (Math.random() - 0.5) * 20, this.lulu.y - 10, 4, 0xffd700).setDepth(3);
+                    this.tweens.add({ targets: sparkle, y: sparkle.y - 30, alpha: 0, scale: 0, duration: 800, onComplete: () => sparkle.destroy() });
+                  }
+                },
+                repeat: -1
+              });
+
+              this.dodi = this.add.image(1000, 250, 'dodi').setDepth(2);
+              this.tweens.add({ targets: this.dodi, y: 248, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+              this.player = this.physics.add.sprite(600, 450, 'player_down_0').setDepth(3);
+              this.player.setCollideWorldBounds(true);
+              this.player.body.setSize(12, 12);
+              this.player.body.setOffset(10, 28);
+
+              this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+              this.cameras.main.setZoom(1.5);
+              this.cameras.main.setBounds(0, 0, W, H);
+              this.physics.world.setBounds(0, 0, W, H);
+              this.cameras.main.setBackgroundColor('#fff5f0');
+
+              this.time.delayedCall(1500, () => window.dispatchEvent(new CustomEvent('showWelcome')));
+
+              this.cursors = this.input.keyboard.createCursorKeys();
+              this.wasd = { w: this.input.keyboard.addKey('W'), a: this.input.keyboard.addKey('A'), s: this.input.keyboard.addKey('S'), d: this.input.keyboard.addKey('D') };
+              this.eKey = this.input.keyboard.addKey('E');
+
+              const zoneData = [
+                { id: 'dodi', x: 1000, y: 200, color: 0xc62828, icon: '🎩', label: 'The Ringmaster' },
+                { id: 'photos', x: 200, y: 700, color: 0xf48fb1, icon: '📸', label: 'Memory Lane' },
+                { id: 'lulu', x: 200, y: 200, color: 0x4caf50, icon: '🦜', label: "Lulu's Stage" },
+                { id: 'gift', x: 1000, y: 700, color: 0xffd700, icon: '🎪', label: 'The Final Act' }
+              ];
+
+              zoneData.forEach(z => {
+                for (let i = 3; i > 0; i--) {
+                  const glow = this.add.circle(z.x, z.y, 50 + i * 12, z.color, 0.08).setDepth(0.4);
+                  this.tweens.add({ targets: glow, scale: 1.3, alpha: 0, duration: 1400 + i * 200, repeat: -1, delay: i * 150 });
+                }
+
+                const circle = this.add.circle(z.x, z.y, 45, z.color, 0.5).setDepth(1);
+                circle.setStrokeStyle(4, z.color, 0.9);
+
+                const core = this.add.circle(z.x, z.y, 18, 0xffffff, 0.5).setDepth(1);
+                this.tweens.add({ targets: core, scale: 1.4, alpha: 0.2, duration: 900, yoyo: true, repeat: -1 });
+
+                const icon = this.add.text(z.x, z.y - 60, z.icon, { fontSize: '34px' }).setOrigin(0.5).setDepth(2);
+                this.tweens.add({ targets: icon, y: z.y - 68, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+                const label = this.add.text(z.x, z.y + 58, z.label, {
+                  fontSize: '11px', fill: '#5d4037', backgroundColor: '#fff8e7', padding: { x: 6, y: 3 }
+                }).setOrigin(0.5).setDepth(2);
+
+                this.zones.push({ ...z, circle, core, icon, label, visited: false });
+              });
+
+              const confetti = this.add.particles('confetti').setDepth(4);
+              confetti.createEmitter({
+                x: { min: 0, max: W }, y: -10,
+                speedY: { min: 30, max: 60 }, speedX: { min: -15, max: 15 },
+                lifespan: 9000, frequency: 300,
+                scale: { start: 1, end: 0.4 }, alpha: { start: 0.9, end: 0 },
+                rotate: { min: 0, max: 360 },
+                tint: [0xf48fb1, 0xffd700, 0x4caf50, 0xc5e1a5, 0xffab91, 0xce93d8]
+              });
+
+              const glitter = this.add.particles('glitter').setDepth(4);
+              glitter.createEmitter({
+                x: { min: 0, max: W }, y: -10,
+                speedY: { min: 15, max: 35 }, lifespan: 8000, frequency: 500,
+                scale: { start: 0.8, end: 0.2 }, alpha: { start: 1, end: 0 }
+              });
+            }
+
+            update(time, delta) {
+              const speed = 150, accel = 600, friction = 0.88;
+              let ix = 0, iy = 0;
+
+              if (this.cursors.left.isDown || this.wasd.a.isDown) ix = -1;
+              if (this.cursors.right.isDown || this.wasd.d.isDown) ix = 1;
+              if (this.cursors.up.isDown || this.wasd.w.isDown) iy = -1;
+              if (this.cursors.down.isDown || this.wasd.s.isDown) iy = 1;
+
+              if (ix !== 0 || iy !== 0) {
+                this.facing = Math.abs(iy) > Math.abs(ix) ? (iy < 0 ? 'up' : 'down') : (ix < 0 ? 'left' : 'right');
+                this.player.setTexture('player_' + this.facing + '_0');
+                const angle = Math.atan2(iy, ix);
+                this.velocity.x += Math.cos(angle) * accel * (delta / 1000);
+                this.velocity.y += Math.sin(angle) * accel * (delta / 1000);
+              }
+
+              this.velocity.x *= friction;
+              this.velocity.y *= friction;
+
+              const spd = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
+              if (spd > speed) {
+                this.velocity.x = (this.velocity.x / spd) * speed;
+                this.velocity.y = (this.velocity.y / spd) * speed;
+              }
+
+              this.player.setVelocity(this.velocity.x, this.velocity.y);
+              window.dispatchEvent(new CustomEvent('playerMove', { detail: { x: this.player.x, y: this.player.y } }));
+
+              if (this.lulu) {
+                const luluDist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.lulu.x, this.lulu.y);
+                if (luluDist < 100 && Math.random() < 0.03) {
+                  const heart = this.add.circle(this.lulu.x + (Math.random() - 0.5) * 30, this.lulu.y, 6, 0x4caf50).setDepth(3);
+                  this.tweens.add({ targets: heart, y: heart.y - 40, alpha: 0, scale: 0, duration: 1000, onComplete: () => heart.destroy() });
+                  window.dispatchEvent(new CustomEvent('luluHeart'));
+                }
+              }
+
+              this.hearts.forEach(h => {
+                if (!h.collected && Phaser.Math.Distance.Between(this.player.x, this.player.y, h.x, h.y) < 30) {
+                  h.collected = true;
+                  this.tweens.add({ targets: h, scale: 1.5, alpha: 0, y: h.y - 40, duration: 400, onComplete: () => h.setVisible(false) });
+                  window.dispatchEvent(new CustomEvent('collectHeart'));
+                }
+              });
+
+              this.sparkles.forEach(s => {
+                if (!s.found && Phaser.Math.Distance.Between(this.player.x, this.player.y, s.x, s.y) < 30) {
+                  s.found = true;
+                  this.tweens.add({ targets: s, scale: 1.5, alpha: 0, duration: 400, onComplete: () => s.setVisible(false) });
+                  window.dispatchEvent(new CustomEvent('findMemory', { detail: s.idx }));
+                }
+              });
+
+              let near = null;
+              this.zones.forEach(z => {
+                const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, z.x, z.y);
+                if (dist < 55) {
+                  near = z.id;
+                  z.circle.setScale(1.1);
+                } else {
+                  z.circle.setScale(1);
+                }
+              });
+              window.dispatchEvent(new CustomEvent('nearZone', { detail: near }));
+
+              if (Phaser.Input.Keyboard.JustDown(this.eKey) && near) {
+                const z = this.zones.find(zone => zone.id === near);
+                if (z) {
+                  z.visited = true;
+                  z.icon.setText('✅');
+                  window.dispatchEvent(new CustomEvent('interact', { detail: near }));
+                  window.dispatchEvent(new CustomEvent('updateVisited', { detail: { id: near } }));
+                }
+              }
+            }
+          }
+
+          phaserGameRef.current = new Phaser.Game({
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: gameRef.current,
+            backgroundColor: '#fff5f0',
+            physics: { default: 'arcade', arcade: { gravity: { y: 0 } } },
+            scene: GameScene
+          });
+
+          const handlers = {
+            nearZone: e => setNearbyZone(e.detail),
+            interact: e => setActiveModal(e.detail),
+            showWelcome: () => { setShowWelcome(true); setTimeout(() => setShowWelcome(false), 5000); },
+            updateVisited: e => setVisitedAreas(p => ({ ...p, [e.detail.id]: true })),
+            collectHeart: () => setHeartsCollected(p => p + 1),
+            findMemory: e => { setMemoriesFound(p => p + 1); setCurrentMemory(e.detail); setTimeout(() => setCurrentMemory(null), 3000); },
+            playerMove: e => setPlayerPos(e.detail),
+            luluHeart: () => setLuluHearts(p => p + 1)
+          };
+          Object.entries(handlers).forEach(([e, h]) => window.addEventListener(e, h));
+          return () => Object.entries(handlers).forEach(([e, h]) => window.removeEventListener(e, h));
+        };
+
+        document.head.appendChild(script);
+        return () => { if (phaserGameRef.current) { phaserGameRef.current.destroy(true); phaserGameRef.current = null; } };
+      }, [isUnlocked]);
+
+      const completedCount = Object.values(visitedAreas).filter(Boolean).length;
+
+      if (!isUnlocked) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 flex items-center justify-center p-4 relative overflow-hidden">
+            {[...Array(20)].map((_, i) => (
+              <div key={i} className="absolute animate-float opacity-30" style={{
+                left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`, animationDuration: `${4 + Math.random() * 4}s`
+              }}>
+                <span className="text-3xl">{['⭐', '🎪', '🎀', '✨', '🎈', '🎠', '💚'][Math.floor(Math.random() * 7)]}</span>
+              </div>
+            ))}
+            
+            <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 max-w-md w-full border-4 border-green-400 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-green-200 to-transparent rounded-br-full" />
+              <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-pink-200 to-transparent rounded-tl-full" />
+              
+              <div className="text-center mb-8 mt-6">
+                <div className="text-7xl mb-6 animate-bounce">🎪</div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-pink-600 bg-clip-text text-transparent mb-3">🎙️ Ladies & Gentlemen!</h1>
+                <p className="text-green-600 text-lg">The show is about to begin...</p>
+                <p className="text-sm text-pink-400 mt-3 italic">✨ Hint: our feathered star + the magic number ✨</p>
+              </div>
+              
+              <input
+                type="text"
+                value={passphrase}
+                onChange={e => setPassphrase(e.target.value)}
+                onKeyPress={e => { if (e.key === 'Enter' && passphrase.toLowerCase() === 'lulu23') setIsUnlocked(true); }}
+                placeholder="Speak the magic words..."
+                className="w-full px-6 py-4 bg-green-50 border-2 border-green-300 rounded-full mb-4 focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-200 text-green-800 text-center text-lg transition-all"
+              />
+              <button
+                onClick={() => { if (passphrase.toLowerCase() === 'lulu23') setIsUnlocked(true); }}
+                className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white py-4 rounded-full font-bold text-xl hover:from-green-400 hover:via-emerald-400 hover:to-green-400 transition-all hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
+              >
+                🎟️ Enter the Big Top 🎟️
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      const QuestLog = () => (
+        <div className="absolute top-4 left-4 bg-white/95 rounded-2xl p-4 shadow-xl border-2 border-green-300 backdrop-blur-sm w-48">
+          <h3 className="text-sm font-bold text-green-700 mb-3 flex items-center gap-2">🎪 Tonight's Acts</h3>
+          <div className="space-y-2 text-xs">
+            {[
+              { id: 'dodi', label: '🎩 Meet the Ringmaster', done: visitedAreas.dodi },
+              { id: 'lulu', label: '🦜 See Lulu Perform', done: visitedAreas.lulu },
+              { id: 'photos', label: '📸 Visit Memory Lane', done: visitedAreas.photos },
+              { id: 'gift', label: '🎪 The Final Act', done: visitedAreas.gift },
+            ].map(quest => (
+              <div key={quest.id} className={`flex items-center gap-2 p-2 rounded-lg transition-all ${quest.done ? 'bg-green-100' : 'bg-gray-50'}`}>
+                <span className={`text-lg ${quest.done ? 'animate-bounce' : ''}`}>{quest.done ? '✅' : '⬜'}</span>
+                <span className={quest.done ? 'text-green-700 line-through' : 'text-gray-600'}>{quest.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+      const NameBubble = () => (
+        isPlayerIdle && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-32 pointer-events-none z-30">
+            <div className="bg-white/95 px-4 py-2 rounded-full shadow-lg border-2 border-green-300 flex items-center gap-2 animate-pulse">
+              <span className="text-green-600 font-bold">{BIRTHDAY_NAME}</span>
+              <span className="text-green-500 text-xl">💚</span>
+            </div>
+          </div>
+        )
+      );
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 p-4">
+          {showWelcome && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white rounded-3xl p-8 max-w-lg text-center shadow-2xl border-4 border-green-400 mx-4 animate-scaleIn">
+                <div className="flex justify-center gap-2 text-4xl mb-4">
+                  {['🎪', '✨', '🦜'].map((e, i) => <span key={i} className="animate-bounce" style={{ animationDelay: `${i * 0.1}s` }}>{e}</span>)}
+                </div>
+                <h2 className="text-2xl font-bold text-green-700 mb-2">🎙️ Ladies and Gentlemen!</h2>
+                <p className="text-xl text-pink-600 mb-4">Please welcome... {BIRTHDAY_NAME}!</p>
+                <div className="space-y-3 text-left bg-gradient-to-br from-green-50 to-pink-50 p-5 rounded-2xl border-2 border-green-200">
+                  <p className="text-green-700 flex items-center gap-3"><span className="text-xl">🎮</span><span><strong>Move:</strong> Arrow Keys or WASD</span></p>
+                  <p className="text-green-700 flex items-center gap-3"><span className="text-xl">✨</span><span><strong>Interact:</strong> Press E at glowing circles</span></p>
+                  <p className="text-green-700 flex items-center gap-3"><span className="text-xl">💚</span><span><strong>Collect:</strong> Green hearts for love!</span></p>
+                  <p className="text-green-700 flex items-center gap-3"><span className="text-xl">⭐</span><span><strong>Discover:</strong> Golden stars for memories!</span></p>
+                </div>
+                <p className="text-pink-600 mt-5 font-semibold text-lg">🎺 The show is about to begin! 🎺</p>
+              </div>
+            </div>
+          )}
+
+          {currentMemory !== null && (
+            <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-slideDown">
+              <div className="bg-white border-2 border-amber-400 rounded-2xl px-8 py-4 shadow-2xl flex items-center gap-3">
+                <span className="text-2xl animate-spin">⭐</span>
+                <p className="text-amber-700 font-medium text-lg">{memories[currentMemory]}</p>
+              </div>
+            </div>
+          )}
+
+          {showDrumroll && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+              <div className="text-center">
+                <div className="text-8xl mb-6 animate-pulse">🥁</div>
+                <p className="text-white text-3xl font-bold animate-pulse">Drumroll please...</p>
+              </div>
+            </div>
+          )}
+
+          {showCelebration && (
+            <div className="fixed inset-0 pointer-events-none z-50">
+              {[...Array(80)].map((_, i) => (
+                <div key={i} className="absolute animate-fall" style={{
+                  left: `${Math.random() * 100}%`, top: '-5%',
+                  animationDelay: `${Math.random() * 2}s`, animationDuration: `${2 + Math.random() * 3}s`
+                }}>
+                  <span style={{ fontSize: `${16 + Math.random() * 24}px` }}>
+                    {['🎉', '💚', '🎪', '✨', '🎈', '🎀', '⭐', '🦜', '🎠', '🎭', '💖', '🌟'][Math.floor(Math.random() * 12)]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-white/95 backdrop-blur-sm border-2 border-green-400 rounded-3xl shadow-xl p-5 mb-4">
+              <div className="flex justify-between items-center flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl">🎪</div>
+                  <div>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-pink-600 bg-clip-text text-transparent">The Greatest Show!</h1>
+                    <p className="text-green-500 text-sm">🎙️ Starring the one and only: {BIRTHDAY_NAME}!</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-3 bg-gradient-to-r from-green-100 to-emerald-100 px-4 py-2 rounded-full border border-green-300">
+                    <div className="flex items-center gap-1.5">
+                      <span>💚</span>
+                      <span className="text-green-700 font-bold">{heartsCollected}/{totalHearts}</span>
+                    </div>
+                    <div className="w-px h-4 bg-green-300" />
+                    <div className="flex items-center gap-1.5">
+                      <span>⭐</span>
+                      <span className="text-amber-700 font-bold">{memoriesFound}/{totalMemories}</span>
+                    </div>
+                  </div>
+                  {nearbyZone && (
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-5 py-2 rounded-full font-bold animate-pulse shadow-lg flex items-center gap-2">
+                      🎟️ Press E to Enter
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/95 backdrop-blur-sm border-2 border-green-400 rounded-3xl shadow-xl p-3 relative">
+              <div ref={gameRef} className="rounded-2xl overflow-hidden mx-auto" style={{ maxWidth: '800px' }} />
+              
+              <QuestLog />
+              <NameBubble />
+              
+              <div className="absolute top-4 right-4 bg-white/95 rounded-2xl p-3 shadow-xl border-2 border-green-300 backdrop-blur-sm">
+                <div className="relative w-32 h-24 bg-gradient-to-br from-green-50 via-rose-50 to-amber-50 rounded-xl overflow-hidden border border-green-200">
+                  <div className="absolute w-4 h-4 bg-red-300/40 rounded-full" style={{ left: '46%', top: '46%' }} />
+                  {[
+                    { l: '80%', t: '18%', c: 'bg-red-500' },
+                    { l: '14%', t: '72%', c: 'bg-pink-400' },
+                    { l: '14%', t: '18%', c: 'bg-green-500' },
+                    { l: '80%', t: '72%', c: 'bg-yellow-400' }
+                  ].map((z, i) => (
+                    <div key={i} className="absolute" style={{ left: z.l, top: z.t }}>
+                      <div className={`w-3 h-3 ${z.c} rounded-full animate-pulse shadow-lg`} />
+                    </div>
+                  ))}
+                  <div className="absolute transition-all duration-100" style={{ left: `${(playerPos.x / 1200) * 100}%`, top: `${(playerPos.y / 900) * 100}%`, transform: 'translate(-50%, -50%)' }}>
+                    <div className="w-3 h-3 bg-green-600 rounded-full border-2 border-white shadow-lg" />
+                  </div>
+                </div>
+                <p className="text-xs text-green-600 text-center mt-2 font-semibold">🗺️ Big Top Map</p>
+              </div>
+            </div>
+
+            <div className="text-center mt-4 text-green-600 text-sm font-medium">🎪 A spectacular show for {BIRTHDAY_NAME}'s 23rd Birthday 🎪</div>
+          </div>
+
+          {activeModal && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40 p-4" onClick={e => e.target === e.currentTarget && setActiveModal(null)}>
+              <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-4 border-green-400 animate-scaleIn">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-green-700 flex items-center gap-3">
+                    {activeModal === 'dodi' && <><span>🎩</span> The Ringmaster Speaks!</>}
+                    {activeModal === 'photos' && <><span>📸</span> Memory Lane</>}
+                    {activeModal === 'lulu' && <><span>🦜</span> And Now... A Very Special Guest!</>}
+                    {activeModal === 'gift' && <><span>🎪</span> The Final Act</>}
+                  </h2>
+                  <button onClick={() => setActiveModal(null)} className="text-green-400 hover:text-green-600 hover:bg-green-100 w-12 h-12 flex items-center justify-center rounded-full transition-all text-2xl font-bold">×</button>
+                </div>
+
+                {activeModal === 'dodi' && (
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <div className="text-7xl mb-4">🎩</div>
+                      <p className="text-xl text-green-700 font-bold mb-2">🎙️ Ladies and gentlemen, boys and girls!</p>
+                      <p className="text-pink-600">The Ringmaster welcomes you to the show!</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-pink-50 p-6 rounded-2xl border-2 border-green-200 space-y-4">
+                      <p className="text-green-800 text-lg leading-relaxed text-center">
+                        🎪 Step right up, step right up!
+                      </p>
+                      <p className="text-green-700 leading-relaxed">
+                        Welcome to the greatest show ever created — a circus built entirely for the most SPECTACULAR person I know!
+                      </p>
+                      <p className="text-green-700 leading-relaxed">
+                        I'm Dodi, your Ringmaster for tonight. And trust me when I say... you're in for something special. ✨
+                      </p>
+                      <div className="bg-white p-4 rounded-xl border-2 border-pink-200 text-center">
+                        <p className="text-pink-600 font-bold">🎪 Tonight's Schedule:</p>
+                        <p className="text-green-600 mt-2">🦜 Watch Lulu perform her greatest act</p>
+                        <p className="text-green-600">📸 Stroll down Memory Lane</p>
+                        <p className="text-green-600">🎁 And when you're ready...</p>
+                        <p className="text-pink-600 font-bold text-lg mt-2">Visit "The Final Act" for your real gift 💚</p>
+                      </div>
+                      <p className="text-green-700 italic text-center">
+                        The best is saved for last, Reem. Always.
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-green-600 font-bold text-lg">— Dodi, Your Ringmaster 🎩💚</p>
+                    </div>
+                  </div>
+                )}
+
+                {activeModal === 'photos' && (
+                  <div className="space-y-6">
+                    <p className="text-center text-green-600 italic mb-4">🎙️ And now, a journey through our greatest moments!</p>
+                    
+                    <div className="bg-gradient-to-r from-green-100 via-emerald-50 to-green-100 p-5 rounded-2xl border-2 border-green-400 shadow-lg">
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="text-5xl">🦶</div>
+                          <div>
+                            <h4 className="text-xl font-bold text-green-700">We Love Feet</h4>
+                            <p className="text-green-600 text-sm">Our legendary Valorant masterpiece</p>
+                            <p className="text-pink-500 text-xs italic mt-1">Every agent. Every "Feet". Every screenshot. Pure art.</p>
+                          </div>
+                        </div>
+                        <a 
+                          href="https://d0deh.github.io/WeLoveFeet/" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-3 rounded-full font-bold transition-all hover:scale-105 shadow-lg flex items-center gap-2"
+                        >
+                          🎪 Visit Our Website 🦶
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      {memoryPhotos.map((img, i) => (
+                        <div 
+                          key={i} 
+                          className="group relative aspect-square rounded-xl overflow-hidden border-2 border-green-200 hover:border-green-400 transition-all hover:shadow-xl hover:scale-105 duration-300 cursor-pointer"
+                          onClick={() => window.open(img, '_blank')}
+                        >
+                          <img 
+                            src={img} 
+                            alt="" 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className="absolute bottom-2 right-2 text-white text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">💚</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="text-center bg-pink-50 p-4 rounded-xl border-2 border-pink-200">
+                      <p className="text-pink-600 italic">
+                        Four months of memories... and this is just the beginning 💚
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {activeModal === 'lulu' && (
+                  <div className="text-center space-y-4">
+                    <p className="text-xl text-pink-600 font-bold mb-4">🎙️ And now... from the tropical skies above...</p>
+                    <div className="relative inline-block">
+                      <div className="text-8xl animate-bounce">🦜</div>
+                      <div className="absolute -top-2 -right-2 text-2xl animate-ping">✨</div>
+                      <div className="absolute -bottom-2 -left-2 text-2xl animate-ping" style={{ animationDelay: '0.15s' }}>💚</div>
+                      <div className="absolute top-0 left-0 text-xl animate-ping" style={{ animationDelay: '0.3s' }}>⭐</div>
+                    </div>
+                    <h3 className="text-3xl font-bold text-green-700 mt-4">🌟 THE MAGNIFICENT LULU! 🌟</h3>
+                    <p className="text-green-500 italic text-lg">The most talented green bird in all the land!</p>
+                    
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border-2 border-green-300 space-y-3 text-left max-w-sm mx-auto">
+                      <p className="text-green-700"><span className="text-xl">🎭</span> <strong>Title:</strong> Chief Entertainment Officer</p>
+                      <p className="text-green-700"><span className="text-xl">🌟</span> <strong>Years in showbiz:</strong> 7 spectacular years!</p>
+                      <p className="text-green-700"><span className="text-xl">💚</span> <strong>Specialty:</strong> Stealing hearts & chirping tunes</p>
+                      <p className="text-green-700"><span className="text-xl">🗣️</span> <strong>Signature move:</strong> Saying "هلا والله" like he owns the place</p>
+                      <p className="text-green-700"><span className="text-xl">🏆</span> <strong>Awards:</strong> Best Bird, Cutest Performer, Most Dramatic Entrance</p>
+                    </div>
+
+                    <div className="bg-green-100 p-4 rounded-xl border-2 border-green-300 max-w-md mx-auto">
+                      <p className="text-lg text-green-700 font-medium mb-2">
+                        🎙️ *Lulu takes center stage*
+                      </p>
+                      <p className="text-2xl text-green-600 font-bold mb-2">
+                        "هلا والله!"
+                      </p>
+                      <p className="text-green-700 italic">
+                        *bows dramatically* *chirp chirp*<br/>
+                        "Happy Birthday to my favorite human!<br/>
+                        I'm the luckiest bird to have you as my mom!"<br/>
+                        *throws sparkles with wings* ✨🎉
+                      </p>
+                    </div>
+
+                    <p className="text-pink-600 text-sm italic mt-4">
+                      (The crowd goes absolutely wild. Standing ovation. Tears are shed.)
+                    </p>
+                  </div>
+                )}
+
+                {activeModal === 'gift' && (
+                  <div className="text-center space-y-6">
+                    {giftStage < 5 ? (
+                      <>
+                        <div className={`text-7xl ${giftStage < 4 ? 'animate-bounce' : 'animate-pulse'}`}>
+                          {['🎁', '🥁', '✨', '🎀', '💌'][giftStage]}
+                        </div>
+                        <h3 className="text-2xl font-bold text-green-700">
+                          {[
+                            '🎙️ The Final Act Begins...',
+                            '🥁 The Drums Roll...',
+                            '✨ The Spotlight Focuses...',
+                            '🎀 A Gift Appears...',
+                            '💌 Inside Lies Something Special...'
+                          ][giftStage]}
+                        </h3>
+                        <p className="text-lg text-pink-600">
+                          {[
+                            'Ladies and gentlemen, prepare yourselves...',
+                            'Ba-dum... ba-dum... ba-dum...',
+                            'The crowd holds their breath...',
+                            'Wrapped with love and tied with memories...',
+                            'A message from the heart...'
+                          ][giftStage]}
+                        </p>
+                        <button
+                          onClick={() => {
+                            if (giftStage === 0) {
+                              setShowDrumroll(true);
+                              setTimeout(() => { setShowDrumroll(false); setGiftStage(1); }, 2000);
+                            } else if (giftStage === 4) {
+                              setShowCelebration(true);
+                              setTimeout(() => setShowCelebration(false), 8000);
+                              setGiftStage(5);
+                            } else {
+                              setGiftStage(s => s + 1);
+                            }
+                          }}
+                          className="bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 hover:from-green-400 hover:via-emerald-400 hover:to-green-400 text-white px-10 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-110 shadow-xl"
+                        >
+                          🎟️ {['Begin the Act', 'Continue', 'Step Closer', 'Unwrap It', 'Read It'][giftStage]}
+                        </button>
+                      </>
+                    ) : (
+                      <div className="animate-fadeIn space-y-6">
+                        <div className="text-6xl animate-pulse mb-2">💚</div>
+                        <h3 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-pink-600 bg-clip-text text-transparent">🎪 Happy 23rd Birthday, Reem! 🎪</h3>
+                        
+                        <div className="bg-gradient-to-br from-green-50 via-white to-pink-50 p-6 rounded-2xl border-2 border-green-300 shadow-xl space-y-5 max-w-2xl mx-auto text-left max-h-96 overflow-y-auto">
+                          
+                          <div className="text-center pb-4 border-b border-green-200">
+                            <p className="text-green-700 italic text-lg">🎙️ Ladies and gentlemen... the moment you've been waiting for...</p>
+                            <p className="text-pink-600 font-bold text-xl mt-2">Everything I love about you, Reem 💚</p>
+                          </div>
+
+                          <div className="space-y-4">
+                            
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-green-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-green-700 flex items-center gap-2">😇 Innocent-But-Deadly Energy</h4>
+                              <p className="text-green-600 mt-2 text-sm leading-relaxed">
+                                You look calm. Soft. Peaceful. And then you say something so quietly lethal that I need a second to recover. Not loud sarcasm. Not aggressive. Just perfectly timed, innocent-looking emotional damage.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-pink-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-pink-700 flex items-center gap-2">☁️ Cloud-Level Comfort</h4>
+                              <p className="text-pink-600 mt-2 text-sm leading-relaxed">
+                                Talking to you feels easy. Like floating on a cloud that somehow also roasts me occasionally. There's never pressure, never effort — just this weird calm that makes hours disappear without me noticing.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-green-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-green-700 flex items-center gap-2">💭 The Intrusive Blessing</h4>
+                              <p className="text-green-600 mt-2 text-sm leading-relaxed">
+                                You're intrusive. And somehow that's one of my favorite things about you. Because every time you ask about my life, my world, my random thoughts — it feels like an excuse to let you in a little more. And I never mind it. Not even once.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-purple-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-purple-700 flex items-center gap-2">🎮 Valorant, Roblox & The Origin Story</h4>
+                              <p className="text-purple-600 mt-2 text-sm leading-relaxed">
+                                Valorant brought us together. But Roblox — specifically that fruit game — is where things really changed. Somehow stacking fruit in Roblox made us closer than most people ever get. Which is honestly very us.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-pink-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-pink-700 flex items-center gap-2">🎵 Music Soulmate Behavior</h4>
+                              <p className="text-pink-600 mt-2 text-sm leading-relaxed">
+                                Our music taste overlapping is criminally comforting. Our Spotify blend is my default soundtrack. Some days I don't even pick music — I just let us play in the background.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-green-500 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-green-700 flex items-center gap-2">🦜 Lulu the Legend</h4>
+                              <p className="text-green-600 mt-2 text-sm leading-relaxed">
+                                Your green bird Lulu is genuinely one of the cutest creatures alive. He says "هلا والله" like he owns the place. And honestly? He does. You care about him so deeply that most birds in the world would wish for a mom like you. He's lucky. And so am I for getting front-row seats to that softness.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-amber-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-amber-700 flex items-center gap-2">✨ Fashion Brain That Should Be Illegal</h4>
+                              <p className="text-amber-600 mt-2 text-sm leading-relaxed">
+                                Your fashion ideas are genuinely out of the box — not trendy, not copied, just you. Your creativity is obvious to everyone around you, even if you don't always see it yourself. Your family sees it. Your friends see it. And I see a future where you're doing something incredible and pretending you're "just doing your thing" like it's no big deal.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-blue-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-blue-700 flex items-center gap-2">🍪 Gave Me Cookie, Got You Cookie</h4>
+                              <p className="text-blue-600 mt-2 text-sm leading-relaxed">
+                                You begged me to watch New Girl because you knew I'd love it. I watched the first episode alone. Told you it was really good. Then we watched "a couple episodes together." Which turned into… all of it. And somehow, that became one of the reasons we're this close.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-red-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-red-700 flex items-center gap-2">🎭 Musical Theatre Main Character</h4>
+                              <p className="text-red-600 mt-2 text-sm leading-relaxed">
+                                Hamilton. The Greatest Showman. EPIC. You don't just like them — you know them. Lyrics. Feelings. Energy. Honestly? The circus vibe of this whole website exists because your taste demands drama, magic, and emotion.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-green-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-green-700 flex items-center gap-2">☯️ Yin & Yang</h4>
+                              <p className="text-green-600 mt-2 text-sm leading-relaxed">
+                                You like coffee. I like tea. Somehow it works perfectly. Just like everything else.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-indigo-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-indigo-700 flex items-center gap-2">🌙 Night Owl Loyalty</h4>
+                              <p className="text-indigo-600 mt-2 text-sm leading-relaxed">
+                                You stay up just to stay with me. Almost every night. Until one of us taps out from sleep. And I don't think you realize how much that means — but it does.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-pink-400 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-pink-700 flex items-center gap-2">🌸 The Quiet Struggles</h4>
+                              <p className="text-pink-600 mt-2 text-sm leading-relaxed">
+                                You doubt yourself — even when you're clearly one of the best people I know. And I wish you could see yourself the way I see you, even for a second.
+                              </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl border-l-4 border-green-500 shadow-sm hover:shadow-md transition-all">
+                              <h4 className="font-bold text-green-700 flex items-center gap-2">💚 Four Months. Somehow a Lifetime.</h4>
+                              <p className="text-green-600 mt-2 text-sm leading-relaxed">
+                                I've known you for four months. Which is ridiculous, because I can't imagine a day without you anymore. You're my pookie. My calm place. My soft support system.
+                              </p>
+                            </div>
+
+                          </div>
+
+                          <div className="pt-4 border-t border-green-200 space-y-4">
+                            <div className="bg-green-50 p-4 rounded-xl border-2 border-green-300">
+                              <h4 className="font-bold text-green-700 text-center text-lg mb-2">🎂 This Birthday</h4>
+                              <p className="text-green-600 text-center leading-relaxed">
+                                I know you joke about getting old. But your energy is fresh. Young. Full of life.<br/>
+                                And this year, I hope you feel what you actually are:
+                              </p>
+                              <p className="text-center text-xl font-bold text-pink-600 mt-3">
+                                Loved. Appreciated. Chosen.
+                              </p>
+                              <p className="text-center text-green-600 mt-1">By me and gang. 💚</p>
+                            </div>
+
+                            <p className="text-center text-pink-600 italic">
+                              And if a few emotions sneak out today?<br/>
+                              <span className="font-bold">I'll count that as a success.</span>
+                            </p>
+
+                            <div className="text-center pt-4">
+                              <p className="text-2xl font-bold text-green-700">Happy Birthday, Reem 🎂💚</p>
+                              <p className="text-pink-600 mt-2">This circus? It's all for you.</p>
+                              <p className="text-green-600 font-bold text-lg mt-4 italic">— Dodi 🎩💚</p>
+                            </div>
+                          </div>
+
+                        </div>
+                        
+                        <div className="flex justify-center gap-2 mt-6 text-3xl">
+                          {['🎪', '💚', '🎂', '✨', '🦜', '🎭', '⭐'].map((e, i) => (
+                            <span key={i} className="animate-bounce" style={{ animationDelay: `${i * 0.1}s` }}>{e}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<BirthdayGame />);
+  </script>
+</body>
+</html>
